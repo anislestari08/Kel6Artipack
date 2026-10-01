@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Katalog Toko</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 font-sans">
+    <div class="container mx-auto p-6 max-w-6xl">
+        <header class="mb-8 text-center">
+            <h1 class="text-4xl font-bold text-gray-800">Katalog Produk Toko Kami</h1>
+            <p class="text-gray-600 mt-2">Pilih produk berkualitas kebutuhan Anda</p>
+        </header>
+
+        <div id="loading" class="text-center text-gray-500 text-xl py-12">Memuat produk...</div>
+        
+        <!-- Grid Katalog Produk -->
+        <div id="productGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>
+    </div>
+
+    <script>
+        const BIN_ID = '6abe0b72ac6210605a08279a';
+        // Untuk pembeli, Master Key aman disembunyikan atau cukup menggunakan GET request publik jika bin diset Public. 
+        // Karena ini menggunakan kunci Anda, pastikan membaca data lewat endpoint /latest.
+        const URL = `https://api.jsonbin.io/v3/b/${BIN_ID}/latest`;
+
+        async function loadStoreProducts() {
+            try {
+                const response = await fetch(URL, {
+                    headers: { 'X-Master-Key': '$2a$10$odaaIutAUaKkTaWlE5s49.rskFQ.XGpmexK9T7Hn1YYLZR.0yeUh2' }
+                });
+                const result = await response.json();
+                const products = result.record.products || [];
+                
+                document.getElementById('loading').style.display = 'none';
+                const grid = document.getElementById('productGrid');
+                grid.innerHTML = '';
+
+                products.forEach(p => {
+                    grid.innerHTML += `
+                        <div class="bg-white rounded-lg shadow-md overflow-hidden flex flex-col justify-between hover:shadow-lg transition">
+                            <div>
+                                <img src="${p.img}" alt="${p.name}" class="w-full h-48 object-cover">
+                                <div class="p-4">
+                                    <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded font-semibold">${p.badge}</span>
+                                    <h3 class="font-bold text-lg mt-2 text-gray-800">${p.name}</h3>
+                                    <p class="text-gray-500 text-sm mt-1">Stok: ${p.stock} | ⭐ ${p.rating}</p>
+                                </div>
+                            </div>
+                            <div class="p-4 pt-0 flex items-center justify-between">
+                                <span class="text-lg font-bold text-green-600">Rp ${p.price.toLocaleString()}</span>
+                                <button onclick="alert('Produk ${p.name} dipilih!')" class="bg-blue-600 text-white px-3 py-1.5 rounded text-sm hover:bg-blue-700">Beli</button>
+                            </div>
+                        </div>
+                    `;
+                });
+            } catch (error) {
+                document.getElementById('loading').innerText = 'Gagal memuat katalog produk.';
+                console.error(error);
+            }
+        }
+
+        loadStoreProducts();
+    </script>
+</body>
+</html>
