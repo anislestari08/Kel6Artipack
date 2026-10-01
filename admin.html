@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Penjual - Toko</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans">
+    <div class="container mx-auto p-6 max-w-4xl">
+        <h1 class="text-3xl font-bold mb-6 text-gray-800">Panel Penjual (Admin)</h1>
+        
+        <!-- Form Tambah Produk -->
+        <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+            <h2 class="text-xl font-semibold mb-4 text-gray-700">Tambah Produk Baru</h2>
+            <form id="addProductForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input type="text" id="name" placeholder="Nama Produk" required class="p-2 border rounded">
+                <input type="number" id="price" placeholder="Harga (Rp)" required class="p-2 border rounded">
+                <input type="number" id="stock" placeholder="Stok" required class="p-2 border rounded">
+                <input type="text" id="badge" placeholder="Kategori/Badge (cth: Ziplock)" required class="p-2 border rounded">
+                <input type="text" id="img" placeholder="URL Gambar" required class="p-2 border rounded md:col-span-2">
+                <button type="submit" class="bg-blue-600 text-white p-2 rounded hover:bg-blue-700 md:col-span-2 font-semibold">Simpan Produk</button>
+            </form>
+        </div>
+
+        <!-- Daftar Produk -->
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-xl font-semibold mb-4 text-gray-700">Daftar Produk di JSONBin</h2>
+            <div id="loading" class="text-gray-500">Memuat data...</div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse" id="productTable" style="display:none;">
+                    <thead>
+                        <tr class="border-b bg-gray-50">
+                            <th class="p-3">Nama</th>
+                            <th class="p-3">Harga</th>
+                            <th class="p-3">Stok</th>
+                            <th class="p-3">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productList"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const BIN_ID = '6abe0b72ac6210605a08279a';
+        const API_KEY = '$2a$10$odaaIutAUaKkTaWlE5s49.rskFQ.XGpmexK9T7Hn1YYLZR.0yeUh2';
+        const URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+
+        let currentProducts = [];
+
+        async function fetchProducts() {
+            try {
+                const response = await fetch(`${URL}/latest`, {
+                    headers: { 'X-Master-Key': API_KEY }
+                });
+                const result = await response.json();
+                currentProducts = result.record.products || [];
+                renderTable();
+            } catch (error) {
+                alert('Gagal memuat data dari JSONBin');
+                console.error(error);
+            }
+        }
+
+        function renderTable() {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('productTable').style.display = 'table';
+            const tbody = document.getElementById('productList');
+            tbody.innerHTML = '';
+
+            currentProducts.forEach((p, index) => {
+                tbody.innerHTML += `
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="p-3">${p.name}</td>
+                        <td class="p-3">Rp ${p.price.toLocaleString()}</td>
+                        <td class="p-3">${p.stock}</td>
+                        <td class="p-3">
+                            <button onclick="deleteProduct(${p.id})" class="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600">Hapus</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        document.getElementById('addProductForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newProduct = {
+                id: currentProducts.length > 0 ? Math.max(...currentProducts.map(p => p.id)) + 1 : 1,
+                name: document.getElementById('name').value,
+                price: Number(document.getElementById('price').value),
+                stock: Number(document.getElementById('stock').value),
+                rating: "5.0",
+                img: document.getElementById('img').value,
+                badge: document.getElementById('badge').value
+            };
+
+            currentProducts.push(newProduct);
+            await updateJSONBin();
+        });
+
+        async function deleteProduct(id) {
+            if (!confirm('Yakin ingin menghapus produk ini?')) return;
+            currentProducts = currentProducts.filter(p => p.id !== id);
+            await updateJSONBin();
+        }
+
+        async function updateJSONBin() {
+            try {
+                const response = await fetch(URL, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Master-Key': API_KEY
+                    },
+                    body: JSON.stringify({ products: currentProducts })
+                });
+
+                if (response.ok) {
+                    alert('Berhasil memperbarui database!');
+                    fetchProducts();
+                    document.getElementById('addProductForm').reset();
+                } else {
+                    alert('Gagal menyimpan ke JSONBin');
+                }
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        fetchProducts();
+    </script>
+</body>
+</html>
